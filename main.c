@@ -22,6 +22,7 @@
 #include <avr/pgmspace.h>
 
 #define VERSION_STRING          "TWIBOOT v3.2"
+#define F_CPU 					8000000ULL
 #define EEPROM_SUPPORT          1
 #define LED_SUPPORT             1
 
@@ -37,22 +38,28 @@
 #define TWI_ADDRESS             0x29
 #endif
 
-#define F_CPU                   8000000ULL
+
 #define TIMER_DIVISOR           1024
 #define TIMER_IRQFREQ_MS        25
-#define TIMEOUT_MS              1000
+#define TIMEOUT_MS              2500
 
 #define TIMER_MSEC2TICKS(x)     ((x * F_CPU) / (TIMER_DIVISOR * 1000ULL))
 #define TIMER_MSEC2IRQCNT(x)    (x / TIMER_IRQFREQ_MS)
 
 #if (LED_SUPPORT)
-#define LED_INIT()              DDRB = ((1<<PORTB4) | (1<<PORTB5))
-#define LED_RT_ON()             PORTB |= (1<<PORTB4)
-#define LED_RT_OFF()            PORTB &= ~(1<<PORTB4)
-#define LED_GN_ON()             PORTB |= (1<<PORTB5)
-#define LED_GN_OFF()            PORTB &= ~(1<<PORTB5)
-#define LED_GN_TOGGLE()         PORTB ^= (1<<PORTB5)
-#define LED_OFF()               PORTB = 0x00
+#define LED_PORT    PORTD
+#define LED_DIR		DDRD
+#define LED_RT_PIN 6
+#define LED_GN_PIN 7
+
+#define LED_INIT()              LED_DIR |= ((1<<LED_RT_PIN) | (1<<LED_GN_PIN))
+#define LED_RT_ON()             LED_PORT |= (1<<LED_RT_PIN)
+#define LED_RT_OFF()            LED_PORT &= ~(1<<LED_RT_PIN)
+#define LED_RT_TOGGLE()         LED_PORT ^= (1<<LED_RT_PIN)
+#define LED_GN_ON()             LED_PORT |= (1<<LED_GN_PIN)
+#define LED_GN_OFF()            LED_PORT &= ~(1<<LED_GN_PIN)
+#define LED_GN_TOGGLE()         LED_PORT ^= (1<<LED_GN_PIN)
+#define LED_OFF()               LED_PORT = 0x00
 #else
 #define LED_INIT()
 #define LED_RT_ON()
@@ -757,7 +764,7 @@ static void TIMER0_OVF_vect(void)
 #if (VIRTUAL_BOOT_SECTION)
 static void (*jump_to_app)(void) __attribute__ ((noreturn)) = (void*)APPVECT_ADDR;
 #else
-static void (*jump_to_app)(void) __attribute__ ((noreturn)) = (void*)0x0000;
+extern void jump_to_app (void) __asm__("0") __attribute__((__noreturn__));
 #endif
 
 
@@ -786,7 +793,7 @@ void init1(void)
  * automagically called on startup
  */
 #if defined (__AVR_ATmega88__) || defined (__AVR_ATmega168__) || \
-    defined (__AVR_ATmega328P__)
+    defined (__AVR_ATmega328P__) || defined (__AVR_ATmega168P__)
 /* *************************************************************************
  * disable_wdt_timer
  * ************************************************************************* */
