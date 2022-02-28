@@ -41,7 +41,7 @@
 
 #define TIMER_DIVISOR           1024
 #define TIMER_IRQFREQ_MS        25
-#define TIMEOUT_MS              2500
+#define TIMEOUT_MS              6375
 
 #define TIMER_MSEC2TICKS(x)     ((x * F_CPU) / (TIMER_DIVISOR * 1000ULL))
 #define TIMER_MSEC2IRQCNT(x)    (x / TIMER_IRQFREQ_MS)
