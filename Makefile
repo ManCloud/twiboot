@@ -4,11 +4,9 @@ OBJCOPY	:= avr-objcopy
 OBJDUMP	:= avr-objdump
 SIZE	:= avr-size
 
-TARGET = twiboot
+TARGET = twiboot_$(MCU)
 SOURCE = $(wildcard *.c)
 
-# select MCU
-MCU = atmega328p
 
 AVRDUDE_PROG := -c avr910 -b 115200 -P /dev/ttyUSB0
 #AVRDUDE_PROG := -c dragon_isp -P usb
@@ -56,6 +54,8 @@ AVRDUDE_MCU=m168p -F
 AVRDUDE_FUSES=lfuse:w:0xc2:m hfuse:w:0xdd:m efuse:w:0xfa:m
 
 BOOTLOADER_START=0x3C00
+
+CFLAGS += -D__AVR_ATmega168P__
 endif
 
 ifeq ($(MCU), atmega328p)
@@ -65,6 +65,8 @@ ifeq ($(MCU), atmega328p)
 # Fuse E: 0xfd (2.7V BOD)
 AVRDUDE_MCU=m328p -F
 AVRDUDE_FUSES=lfuse:w:0xc2:m hfuse:w:0xdc:m efuse:w:0xfd:m
+
+CFLAGS += -D__AVR_ATmega328P__
 
 BOOTLOADER_START=0x7C00
 endif
@@ -83,7 +85,7 @@ endif
 
 # ---------------------------------------------------------------------------
 
-CFLAGS = -D__AVR_ATmega328P__ -pipe -g -Os -mmcu=$(MCU) -Wall -fdata-sections -ffunction-sections 
+CFLAGS += -pipe -g -Os -mmcu=$(MCU) -Wall -fdata-sections -ffunction-sections 
 CFLAGS += -Wa,-adhlns=$(*F).lst -DBOOTLOADER_START=$(BOOTLOADER_START) $(CFLAGS_TARGET)
 LDFLAGS = -Wl,-Map,$(@:.elf=.map),--cref,--relax,--gc-sections,--section-start=.text=$(BOOTLOADER_START)
 LDFLAGS += -nostartfiles
@@ -98,16 +100,18 @@ $(TARGET).elf: $(SOURCE:.c=.o)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 	@$(OBJDUMP) -h -S $@ > $(@:.elf=.lss)
 	@$(OBJCOPY) -j .text -j .data -O ihex $@ $(@:.elf=.hex)
-	@$(OBJCOPY) -j .text -j .data -O binary $@ $(@:.elf=.bin)
-
+	
 %.o: %.c $(MAKEFILE_LIST)
 	@echo " Building file: $<"
 	$(CC) $(CFLAGS) -o $@ -c $<
 	
 all: $(TARGET).elf
 
+#force to always build everything
+.PHONY: $(MAKEFILE_LIST)
+
 clean:
-	rm -rf $(SOURCE:.c=.o) $(SOURCE:.c=.lst) $(addprefix $(TARGET), .elf .map .lss .hex .bin)
+	rm -rf $(SOURCE:.c=.o) $(SOURCE:.c=.lst) $(addprefix $(TARGET)*, .elf .map .lss .hex)
 
 install: $(TARGET).elf
 	avrdude $(AVRDUDE_PROG) -p $(AVRDUDE_MCU) -U flash:w:$(<:.elf=.hex)
