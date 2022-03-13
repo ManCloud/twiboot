@@ -46,6 +46,8 @@
 #define TIMER_MSEC2TICKS(x)     ((x * F_CPU) / (TIMER_DIVISOR * 1000ULL))
 #define TIMER_MSEC2IRQCNT(x)    (x / TIMER_IRQFREQ_MS)
 
+#define IO_INIT() {DDRD &= ~_BV(PIN2); DDRB |= _BV(PIN1); PORTB |= _BV(PIN1);}
+
 #if (LED_SUPPORT)
 #define LED_PORT    PORTD
 #define LED_DIR		DDRD
@@ -815,6 +817,7 @@ int main(void)
 {
     LED_INIT();
     LED_GN_ON();
+    IO_INIT();
 
 #if (VIRTUAL_BOOT_SECTION)
 	/* load current values (for reading flash) */
